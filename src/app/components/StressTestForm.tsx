@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import SchemaEditor from './SchemaEditor';
 import { AlertTriangle, Play } from 'lucide-react';
 import { allModels } from './models';
 import Select from 'react-select';
+import { generateHash } from '../utils/stressTestStorage';
+import { SavedTest, SystemPromptTest } from '../types/stress-test';
+import { useTestStore } from '../store/testStore';
 
 interface FormData {
+  testName: string;
   models: string[];
   schema: string;
   systemPrompt: string;
@@ -16,14 +20,32 @@ interface FormData {
 interface StressTestFormProps {
   onSubmit: (data: FormData) => void;
   isLoading: boolean;
+  testName?: string;
 }
 
+const StressTestForm: React.FC<StressTestFormProps> = ({ onSubmit, isLoading, testName }) => {
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const savedTests = useTestStore((state) => state.savedTests);
+  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+  const [editingSystemPromptHash, setEditingSystemPromptHash] = useState<string | null>(null);
 
+  // Zustand actions for global state
+  const selectTest = useTestStore((state) => state.selectTest);
+  const selectPromptHashes = useTestStore((state) => state.selectPromptHashes);
+  const saveTestResults = useTestStore((state) => state.saveTestResults);
+  const removeTest = useTestStore((state) => state.removeTest);
+  const removeSystemPrompt = useTestStore((state) => state.removeSystemPrompt);
 
-const StressTestForm: React.FC<StressTestFormProps> = ({ onSubmit, isLoading }) => {
-  const { register, handleSubmit, formState: { errors }, control } = useForm<FormData>({
+  // Find the selected test and system prompt
+  const selectedTest = savedTests.find(t => t.id === selectedTestId) || null;
+  const editingSystemPrompt = selectedTest?.systemPrompts.find(
+    sp => sp.systemPromptHash === editingSystemPromptHash
+  ) || null;
+
+  // Setup form
+  const { register, handleSubmit, formState: { errors }, control, reset, setValue } = useForm<FormData>({
     defaultValues: {
-      // Ensure default models exist in the allModelIds list
+      testName: testName || '',
       models: ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
       schema: `import { z } from "zod";
 
@@ -44,21 +66,189 @@ export default personSchema;
       callTimes: 1
     }
   });
-  const [schemaError, setSchemaError] = useState<string | null>(null);
 
+  // When a test is selected, load its data and lock all but system prompt
+  useEffect(() => {
+    if (selectedTest) {
+      reset({
+        testName: testName || selectedTest.testName,
+        models: selectedTest.models,
+        schema: selectedTest.schema,
+        userPrompt: selectedTest.userPrompt,
+        callTimes: selectedTest.callTimes,
+        systemPrompt: editingSystemPrompt?.systemPrompt || ''
+      });
+    } else if (testName) {
+      // If navigating directly to /:testname, set testName in form
+      setValue('testName', testName);
+    }
+  }, [selectedTestId, editingSystemPromptHash, selectedTest, editingSystemPrompt, reset, testName, setValue]);
+
+  // Handle form submit
   const handleFormSubmit = (data: FormData) => {
     try {
       setSchemaError(null);
-      onSubmit(data);
+
+      // Use testName prop if provided
+      const finalTestName = testName || data.testName;
+
+      // Save or update test in Zustand store
+      saveTestResults(
+        {
+          testName: finalTestName,
+          models: data.models,
+          schema: data.schema,
+          userPrompt: data.userPrompt,
+          callTimes: data.callTimes
+        },
+        data.systemPrompt,
+        [] // Results will be filled after test run
+      );
+
+      // Find the updated test and system prompt hash
+      const updatedTest = useTestStore.getState().savedTests.find(
+        t => t.testName === finalTestName &&
+          t.models.join(",") === data.models.join(",") &&
+          t.schema === data.schema &&
+          t.userPrompt === data.userPrompt &&
+          t.callTimes === data.callTimes
+      );
+      if (updatedTest) {
+        setSelectedTestId(updatedTest.id);
+        const systemPromptHash = generateHash(data.systemPrompt);
+        setEditingSystemPromptHash(systemPromptHash);
+      }
+
+      // Pass data to parent for test run, always use finalTestName
+      onSubmit({ ...data, testName: finalTestName });
     } catch (e: any) {
       setSchemaError(`Invalid JSON Schema: ${e.message}`);
     }
   };
 
+  // Remove a test
+  const handleRemoveTest = (testId: string) => {
+    removeTest(testId);
+    if (selectedTestId === testId) {
+      setSelectedTestId(null);
+      setEditingSystemPromptHash(null);
+      reset();
+    }
+  };
+
+  // Remove a system prompt result from a test
+  const handleRemoveSystemPrompt = (testId: string, systemPromptHash: string) => {
+    removeSystemPrompt(testId, systemPromptHash);
+    if (editingSystemPromptHash === systemPromptHash) {
+      setEditingSystemPromptHash(null);
+      setValue('systemPrompt', '');
+    }
+  };
+
+  // UI: Test selection dropdown
+  const testOptions = savedTests.map(test => ({
+    value: test.id,
+    label: test.testName
+  }));
+
+  // UI: System prompt variations for selected test
+  const systemPromptOptions = selectedTest
+    ? selectedTest.systemPrompts.map(sp => ({
+        value: sp.systemPromptHash,
+        label: sp.systemPrompt.length > 40
+          ? sp.systemPrompt.slice(0, 40) + '...'
+          : sp.systemPrompt,
+        runCount: sp.runCount
+      }))
+    : [];
+
+  // Determine if fields should be locked (editing existing test)
+  const isEditingExistingTest = !!selectedTest;
+
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="bg-white rounded-lg shadow">
       <div className="p-6 space-y-6">
         <div className="space-y-4">
+          {/* Test Name */}
+          {!testName && (
+            <div>
+              <label htmlFor="testName" className="block text-sm font-medium text-slate-700 mb-1">
+                Test Name
+              </label>
+              <input
+                id="testName"
+                {...register('testName', { required: 'Test name is required' })}
+                className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm text-black ${errors.testName ? 'border-red-500' : ''}`}
+                aria-invalid={errors.testName ? "true" : "false"}
+                disabled={isEditingExistingTest}
+              />
+              {errors.testName && (
+                <p className="mt-1 text-sm text-red-600" role="alert">{errors.testName.message}</p>
+              )}
+            </div>
+          )}
+
+          {/* Saved Test Selection */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Load Saved Test
+            </label>
+            <Select
+              isClearable
+              placeholder="Select a saved test..."
+              options={testOptions}
+              value={testOptions.find(opt => opt.value === selectedTestId) || null}
+              onChange={opt => {
+                const id = opt ? opt.value : null;
+                setSelectedTestId(id);
+                setEditingSystemPromptHash(null);
+                selectTest(id); // update global state
+                selectPromptHashes([]); // clear prompt selection in global state
+              }}
+              className="mb-2 text-slate-800"
+            />
+            {selectedTest && (
+              <button
+                type="button"
+                className="text-xs text-red-600 underline"
+                onClick={() => handleRemoveTest(selectedTest.id)}
+              >
+                Remove this test
+              </button>
+            )}
+          </div>
+
+          {/* System Prompt Variation Selection */}
+          {selectedTest && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                System Prompt Variations
+              </label>
+              <Select
+                isClearable
+                placeholder="Select a system prompt variation..."
+                options={systemPromptOptions}
+                value={systemPromptOptions.find(opt => opt.value === editingSystemPromptHash) || null}
+                onChange={opt => {
+                  const hash = opt ? opt.value : null;
+                  setEditingSystemPromptHash(hash);
+                  selectPromptHashes(hash ? [hash] : []);
+                }}
+                className="mb-2 text-slate-800"
+                getOptionLabel={opt => `${opt.label} (Runs: ${opt.runCount})`}
+              />
+              {editingSystemPrompt && (
+                <button
+                  type="button"
+                  className="text-xs text-red-600 underline"
+                  onClick={() => handleRemoveSystemPrompt(selectedTest.id, editingSystemPrompt.systemPromptHash)}
+                >
+                  Remove this system prompt result
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Models Selection */}
           <div>
             <Controller
@@ -74,20 +264,20 @@ export default personSchema;
                     isMulti
                     id="models-select"
                     value={allModels
-                      .filter(modelId => value?.includes(modelId))
-                      .map(modelId => ({
-                        value: modelId,
-                        label: modelId.split('/')[1] || modelId,
-                        group: modelId.split('/')[0]
+                      .filter(model => value?.includes(model.id))
+                      .map(module => ({
+                        value: module.id,
+                        label: module.id.split('/')[1] || module.id,
+                        group: module.id.split('/')[0]
                       }))
                     }
                     onChange={(newValue) => {
                       onChange(newValue?.map(item => item.value));
                     }}
-                    options={allModels.map(modelId => ({
-                      value: modelId,
-                      label: modelId.split('/')[1] || modelId,
-                      group: modelId.split('/')[0]
+                    options={allModels.map(model => ({
+                      value: model.id,
+                      label: model.name,
+                      group: model.id.split('/')[0]
                     })).reduce((groups, item) => {
                       const group = groups.find(g => g.label === item.group);
                       if (group) {
@@ -102,7 +292,7 @@ export default personSchema;
                     }, [] as { label: string, options: any[] }[])}
                     classNames={{
                       control: (state) => 
-                        `!bg-white !border-slate-300 hover:!border-slate-400 ${state.isFocused ? '!border-blue-500 !shadow-sm !ring-1 !ring-blue-500' : ''}`,
+                        `!bg-white !border-slate-300 hover:!border-slate-400  ${state.isFocused ? '!border-blue-500 !shadow-sm !ring-1 !ring-blue-500' : ''}`,
                       option: (state) =>
                         `!text-slate-700 ${state.isFocused ? '!bg-slate-100' : ''} ${state.isSelected ? '!bg-blue-500 !text-white' : ''}`,
                       multiValue: () => '!bg-blue-100',
@@ -184,6 +374,7 @@ export default personSchema;
               rows={3}
               className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm text-black ${errors.userPrompt ? 'border-red-500' : ''}`}
               aria-invalid={errors.userPrompt ? "true" : "false"}
+              disabled={isEditingExistingTest}
             />
             {errors.userPrompt && (
               <p className="mt-1 text-sm text-red-600" role="alert">{errors.userPrompt.message}</p>

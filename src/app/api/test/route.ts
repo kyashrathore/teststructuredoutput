@@ -96,8 +96,8 @@ export async function POST(req: NextRequest) {
           async (_, i) => {
             const startTime = performance.now();
 
+            let llmResponseTime: number;
             try {
-              let llmResponseTime: number;
               const { object: aiResponseText, ...rest } = await generateObject({
                 model: openRouterProvider(model),
                 schema: aiJsonSchema(jsonSchema.definitions.GeneratedSchema),
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
               );
               return {
                 successful: false,
-                timeMs: 0,
+                timeMs: performance.now() - startTime,
                 error: err instanceof Error ? err.message : "Unknown error",
               };
             }

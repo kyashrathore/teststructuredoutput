@@ -14,7 +14,16 @@ const mockOpenRouterResponse = {
     {
       message: {
         role: "assistant",
-        content: JSON.stringify({ result: "mocked" }),
+        content: JSON.stringify({
+          name: "John Doe",
+          age: 30,
+          isStudent: false,
+          interests: ["hiking", "photography", "cooking"],
+          address: {
+            street: "123 Main St",
+            city: "Anytown",
+          },
+        }),
       },
       finish_reason: "stop",
       index: 0,
@@ -32,41 +41,44 @@ const server = setupServer(
     return HttpResponse.json({
       success: true,
       jsonSchema: {
-        type: "object",
-        properties: {
-          name: {
-            type: "string",
-            description: "The person's full name",
-          },
-          age: {
-            type: "integer",
-            minimum: 0,
-          },
-          isStudent: {
-            type: "boolean",
-          },
-          interests: {
-            type: "array",
-            items: {
-              type: "string",
-            },
-            description: "A list of hobbies or interests",
-          },
-          address: {
+        definitions: {
+          GeneratedSchema: {
             type: "object",
             properties: {
-              street: {
+              name: {
                 type: "string",
+                description: "The person's full name",
               },
-              city: {
-                type: "string",
+              age: {
+                type: "integer",
+              },
+              isStudent: {
+                type: "boolean",
+              },
+              interests: {
+                type: "array",
+                items: {
+                  type: "string",
+                },
+                description: "A list of hobbies or interests",
+              },
+              address: {
+                type: "object",
+                properties: {
+                  street: {
+                    type: "string",
+                  },
+                  city: {
+                    type: "string",
+                  },
+                },
+                additionalProperties: false,
               },
             },
+            required: ["name", "age"],
             additionalProperties: false,
           },
         },
-        required: ["name", "age"],
-        additionalProperties: false,
       },
     });
   })
