@@ -26,6 +26,8 @@ export interface SystemPromptTest {
   id: string;                // Unique invocation ID
   systemPrompt: string;      // The system prompt text
   systemPromptHash: string;  // Hash to identify this system prompt
+  models: string[];          // Models used for this variation
+  callTimes: number;         // Number of calls for this variation
   results: TestResult[];     // Results for this system prompt
   createdAt: string;         // ISO string for first created
   updatedAt: string;         // ISO string for last run/updated
@@ -37,9 +39,7 @@ export interface SavedTest {
   id: string;                // Unique identifier for the test
   testName: string;          // User-friendly name
   createdAt: string;         // ISO string for when this test was created
-  models: string[];
   schema: string;
   userPrompt: string;
-  callTimes: number;
   systemPrompts: SystemPromptTest[]; // All system prompt variations/results
 }

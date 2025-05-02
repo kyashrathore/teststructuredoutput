@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StressTestForm from "@/app/components/StressTestForm";
 import ResultsDisplay from "@/app/components/results/ResultsDisplay";
 import { Brain } from "lucide-react";
 import { useTestStore } from "@/app/store/testStore";
+import Link from "next/link";
 
 interface StressTestPageProps {
   testName?: string;
@@ -14,7 +15,10 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
   const [error, setError] = useState<string | null>(null);
 
   const saveTestResults = useTestStore((state) => state.saveTestResults);
+  const saveTestError = useTestStore((state) => state.saveTestError);
 
+  const selectedTestId = useTestStore((state) => state.selectedTestId);
+console.log({selectedTestId})
   const handleRunTest = async (testParams: any) => {
     setIsLoading(true);
     setError(null);
@@ -37,12 +41,12 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
       saveTestResults(
         {
           testName: testParams.testName,
-          models: testParams.models,
           schema: testParams.schema,
           userPrompt: testParams.userPrompt,
-          callTimes: testParams.callTimes,
         },
         testParams.systemPrompt,
+        testParams.models,
+        testParams.callTimes,
         data.results
       );
     } catch (err) {
@@ -59,7 +63,9 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
     <div className="container mx-auto px-4 py-8">
       <header className="mb-10">
         <div className="flex items-center gap-3 mb-2">
-          <Brain className="h-8 w-8 text-blue-500" />
+          <Link href="/">
+            <Brain className="h-8 w-8 text-blue-500" />
+          </Link>
           <h1 className="text-3xl font-bold text-slate-800">
             AI Model Stress Test
           </h1>
@@ -85,6 +91,13 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
             <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg text-red-700">
               <p className="font-medium">Error</p>
               <p>{error}</p>
+            </div>
+          )}
+
+          {saveTestError && (
+            <div className="p-4 mb-6 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700">
+              <p className="font-medium">Warning</p>
+              <p>{saveTestError}</p>
             </div>
           )}
 

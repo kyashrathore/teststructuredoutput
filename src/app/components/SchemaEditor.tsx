@@ -5,9 +5,10 @@ interface SchemaEditorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  disabled?: boolean;
 }
 
-const SchemaEditor: React.FC<SchemaEditorProps> = ({ value, onChange, error }) => {
+const SchemaEditor: React.FC<SchemaEditorProps> = ({ value, onChange, error, disabled = false }) => {
   return (
     <div className="border border-slate-300 rounded-md overflow-hidden">
       <MonacoEditor
@@ -23,6 +24,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ value, onChange, error }) =
           lineNumbers: 'on',
           wordWrap: 'on',
           automaticLayout: true,
+          readOnly: disabled,
         }}
       />
       {error && (

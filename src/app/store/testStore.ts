@@ -10,6 +10,7 @@ interface TestState {
   latestResults: TestResult[] | null;
   editingPromptHash: string | null;
   schemaError: string | null;
+  saveTestError: string | null;
 
   // Actions
   selectTest: (testId: string | null) => void;
@@ -20,6 +21,8 @@ interface TestState {
   saveTestResults: (
     test: Omit<SavedTest, "id" | "createdAt" | "systemPrompts">,
     systemPrompt: string,
+    models: string[],
+    callTimes: number,
     results: TestResult[]
   ) => void;
   removeTest: (testId: string) => void;
@@ -36,6 +39,7 @@ export const useTestStore = create<TestState>()(
       latestResults: null,
       editingPromptHash: null,
       schemaError: null,
+      saveTestError: null,
 
       selectTest: (testId) => {
         const state = get();
@@ -100,22 +104,27 @@ export const useTestStore = create<TestState>()(
         set({ schemaError: error });
       },
 
-      saveTestResults: (test, systemPrompt, results) => {
+      saveTestResults: (test, systemPrompt, models, callTimes, results) => {
         let savedTests = get().savedTests.slice();
         const now = new Date().toISOString();
+
+        // Only block if a test with the same name, schema, and userPrompt exists and you are not updating it.
+        set({ saveTestError: null });
+
+        // Find base test by testName, schema, userPrompt (no models/callTimes)
         let savedTest = savedTests.find(t =>
           t.testName === test.testName &&
-          t.models.join(",") === test.models.join(",") &&
           t.schema === test.schema &&
-          t.userPrompt === test.userPrompt &&
-          t.callTimes === test.callTimes
+          t.userPrompt === test.userPrompt
         );
 
         if (!savedTest) {
           savedTest = {
-            ...test,
             id: generateHash(test.testName + now),
+            testName: test.testName,
             createdAt: now,
+            schema: test.schema,
+            userPrompt: test.userPrompt,
             systemPrompts: []
           };
           savedTests.push(savedTest);
@@ -125,29 +134,45 @@ export const useTestStore = create<TestState>()(
         let systemPromptTest = savedTest.systemPrompts.find(sp => sp.systemPromptHash === systemPromptHash);
 
         if (systemPromptTest) {
-          systemPromptTest.results = results;
+          // Merge new results into existing results for this schema/system prompt variation
+          systemPromptTest.models = models;
+          systemPromptTest.callTimes = callTimes;
+          systemPromptTest.results = Array.isArray(systemPromptTest.results)
+            ? [...systemPromptTest.results, ...results]
+            : results;
           systemPromptTest.updatedAt = now;
           systemPromptTest.runCount += 1;
+
+          // Ensure selection stays on the updated prompt
+          set({
+            savedTests,
+            selectedTestId: savedTest.id,
+            selectedPromptHashes: [systemPromptTest.systemPromptHash],
+            latestResults: systemPromptTest.results,
+            editingPromptHash: systemPromptTest.systemPromptHash,
+          });
         } else {
           systemPromptTest = {
             id: generateHash(systemPrompt + now),
             systemPrompt,
             systemPromptHash,
+            models,
+            callTimes,
             results,
             createdAt: now,
             updatedAt: now,
             runCount: 1
           };
           savedTest.systemPrompts.push(systemPromptTest);
-        }
 
-        set({
-          savedTests,
-          selectedTestId: savedTest.id,
-          selectedPromptHashes: [systemPromptTest.systemPromptHash],
-          latestResults: results,
-          editingPromptHash: systemPromptTest.systemPromptHash,
-        });
+          set({
+            savedTests,
+            selectedTestId: savedTest.id,
+            selectedPromptHashes: [systemPromptTest.systemPromptHash],
+            latestResults: results,
+            editingPromptHash: systemPromptTest.systemPromptHash,
+          });
+        }
       },
 
       removeTest: (testId) => {
@@ -178,37 +203,39 @@ export const useTestStore = create<TestState>()(
           editingPromptHash: null,
         });
       }
-    }),
-    {
-      name: 'stress-test-storage',
-      partialize: (state) => ({
-        savedTests: state.savedTests,
-        selectedTestId: state.selectedTestId,
-        selectedPromptHashes: state.selectedPromptHashes,
-        latestResults: state.latestResults,
-        editingPromptHash: state.editingPromptHash,
-        schemaError: state.schemaError,
       }),
-      migrate: (persistedState: any, version) => {
-        if (
-          !persistedState ||
-          typeof persistedState !== 'object' ||
-          !Array.isArray(persistedState.savedTests)
-        ) {
-          return {
-            savedTests: [],
-            selectedTestId: null,
-            selectedPromptHashes: [],
-            latestResults: null,
-            editingPromptHash: null,
-            schemaError: null,
-          };
-        }
-        return persistedState;
-      },
-    }
-  )
-);
+    {
+        name: 'stress-test-storage',
+        partialize: (state) => ({
+          savedTests: state.savedTests,
+          selectedTestId: state.selectedTestId,
+          selectedPromptHashes: state.selectedPromptHashes,
+          latestResults: state.latestResults,
+          editingPromptHash: state.editingPromptHash,
+          schemaError: state.schemaError,
+          saveTestError: state.saveTestError,
+        }),
+        migrate: (persistedState: any, version) => {
+          if (
+            !persistedState ||
+            typeof persistedState !== 'object' ||
+            !Array.isArray(persistedState.savedTests)
+          ) {
+            return {
+              savedTests: [],
+              selectedTestId: null,
+              selectedPromptHashes: [],
+              latestResults: null,
+              editingPromptHash: null,
+              schemaError: null,
+              saveTestError: null,
+            };
+          }
+          return persistedState;
+        },
+      }
+    )
+  );
 
 import { createSelector } from 'reselect';
 
