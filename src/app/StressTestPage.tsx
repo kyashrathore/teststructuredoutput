@@ -1,7 +1,9 @@
+
+"use client"
 import React, { useState } from 'react';
-import StressTestForm from '../components/StressTestForm';
-import ResultsDisplay from '../components/results/ResultsDisplay';
-import { TestResult } from '../types/stress-test';
+import StressTestForm from '@/app/components/StressTestForm';
+import ResultsDisplay from '@/app/components/results/ResultsDisplay';
+import { TestResult } from '@/app/types/stress-test';
 import { Brain } from 'lucide-react';
 
 const StressTestPage: React.FC = () => {
@@ -14,12 +16,13 @@ const StressTestPage: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/stress-test', {
+      const response = await fetch('/api/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(testParams),
+        next: { revalidate: 0 } 
       });
       
       if (!response.ok) {

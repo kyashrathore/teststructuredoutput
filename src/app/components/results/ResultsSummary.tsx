@@ -52,7 +52,7 @@ const ResultsSummary: React.FC<ResultsSummaryProps> = ({ results }) => {
                 <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-500" />
                 <span className="text-xs">Success Rate</span>
               </div>
-              <p className="text-2xl font-semibold text-slate-900 mt-1">
+              <p className="text-2xl font-semibold text-blue-900 mt-1">
                 {(overallSuccessRate * 100).toFixed(1)}%
               </p>
             </div>

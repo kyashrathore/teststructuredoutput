@@ -9,19 +9,33 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@openrouter/ai-sdk-provider": "^0.4.5",
+    "ai": "^4.3.13",
+    "esbuild": "^0.25.3",
+    "lucide-react": "^0.503.0",
+    "next": "15.3.1",
+    "next-http-proxy-middleware": "^1.2.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.1"
+    "react-hook-form": "^7.56.1",
+    "react-select": "^5.10.1",
+    "recharts": "^2.15.3",
+    "zod": "^3.24.3",
+    "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
-    "@eslint/eslintrc": "^3"
+    "msw": "^2.7.5",
+    "tailwindcss": "^4",
+    "ts-jest": "^29.3.2",
+    "typescript": "^5"
   }
 }

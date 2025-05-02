@@ -1,0 +1,8 @@
+{
+    "functions": {
+        "api/sandbox.js": {
+            "memory":50,
+            "maxDuration": 10
+        }
+    }
+}

@@ -12,7 +12,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ value, onChange, error }) =
     <div className="border border-slate-300 rounded-md overflow-hidden">
       <MonacoEditor
         height="200px"
-        language="json"
+        language="javascript"
         theme="vs-light"
         value={value}
         onChange={(value) => onChange(value || '')}
