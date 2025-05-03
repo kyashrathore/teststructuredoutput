@@ -1,7 +1,6 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import yaml from "js-yaml";
 import { SourceFormat, TargetFormat } from "../types/formats";
-import * as z from "https://cdn.jsdelivr.net/npm/zod@3.23.8/lib/index.mjs";
 import { executeUserCodeAndGetSchema } from "./executeUserCodeAndGetSchema.ts";
 
 

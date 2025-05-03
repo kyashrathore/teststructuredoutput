@@ -1,5 +1,25 @@
-import { ZOD_CDN_URL } from "./CONTANTS.ts";
-import transpileTypeScriptInBrowser from "./transpileTypeScriptInBrowser.js";
+import transpileTypeScriptInBrowser from "./transpileTypeScriptInBrowser";
+
+declare global {
+  interface Window {
+    zod: any;
+    z: any;
+    Babel: any;
+  }
+}
+
+// Get Zod from global window (loaded via <script> tag, assigned to window.z)
+export function loadZodFromCDN() {
+  if (window.zod) {
+    window.z = window.zod;
+    return window.z;
+  } else {
+    console.error(
+      "Zod library not found on window object as 'z'. Check script tag in layout."
+    );
+    throw new Error("Zod library failed to load.");
+  }
+}
 
 function findExportedZodSchema(moduleNamespaceObject: any, zodInstance: any) {
   if (
@@ -60,14 +80,16 @@ export async function executeUserCodeAndGetSchema(
     );
   }
 
-  let blobUrl = null;
   try {
-    const importRegex = /from\s*(['"])zod\1/g;
-
-    const correctedInputTsCode = codeString.replace(
-      importRegex,
-      `from $1${ZOD_CDN_URL}$1`
-    );
+    // Remove all import ... from 'zod' and require('zod') statements
+    let correctedInputTsCode = codeString
+      // Remove ES module imports from 'zod'
+      .replace(/import\s+[^;]*\s+from\s*(['"])zod\1\s*;?/g, "")
+      // Remove CommonJS requires for 'zod'
+      .replace(
+        /(const|let|var)\s+\w+\s*=\s*require\(\s*(['"])zod\2\s*\)\s*;?/g,
+        ""
+      );
 
     const loadedBabelInstance = window.Babel;
     const transpiledJsCode = await transpileTypeScriptInBrowser(
@@ -75,11 +97,9 @@ export async function executeUserCodeAndGetSchema(
       loadedBabelInstance
     );
 
-    const blob = new Blob([transpiledJsCode], { type: "text/javascript" });
-    
-    blobUrl = URL.createObjectURL(blob);
-
-    const moduleNamespaceObject = await import(blobUrl);
+    const moduleNamespaceObject = {};
+    const moduleExecutor = new Function("exports", "zod", transpiledJsCode);
+    moduleExecutor(moduleNamespaceObject, zodInstance);
 
     const zodSchemaObject = findExportedZodSchema(
       moduleNamespaceObject,
@@ -100,10 +120,5 @@ export async function executeUserCodeAndGetSchema(
     );
 
     throw new Error(`Execution failed: ${error.message}`);
-  } finally {
-    if (blobUrl) {
-      URL.revokeObjectURL(blobUrl);
-      console.log("Revoked Blob URL.");
-    }
   }
 }

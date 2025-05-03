@@ -68,7 +68,7 @@ const ResultsSummary: React.FC<ResultsSummaryProps> = ({ results }) => {
                 <span className="text-xs">Success Rate</span>
               </div>
               <p className="text-2xl font-semibold text-blue-900 mt-1">
-                {overallSuccessRate}%
+                {(overallSuccessRate * 100).toFixed(0)}%
               </p>
             </div>
           </div>
@@ -102,7 +102,7 @@ const ResultsSummary: React.FC<ResultsSummaryProps> = ({ results }) => {
                     <p className="text-xs text-slate-600">Most Reliable</p>
                     <p className="text-sm font-medium text-slate-900">
                       {mostReliableModel.modelName.split("/").pop()} (
-                      {mostReliableModel.successRate}
+                      {(mostReliableModel.successRate * 100).toFixed(0)}%
                     </p>
                   </div>
                 </div>
@@ -154,7 +154,7 @@ const ResultsSummary: React.FC<ResultsSummaryProps> = ({ results }) => {
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {result.successRate}%
+                      {(result.successRate * 100).toFixed(0)}%
                     </span>
                   </td>
                 </tr>

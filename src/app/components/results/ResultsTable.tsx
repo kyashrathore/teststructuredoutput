@@ -65,15 +65,15 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
               <div className="flex items-center">
                 <span
                   className={`h-2 w-2 rounded-full mr-1.5 ${
-                    result.successRate >= 0.9 * 100
+                    result.successRate >= 0.9
                       ? "bg-emerald-500"
-                      : result.successRate >= 0.7 * 100
+                      : result.successRate >= 0.7
                       ? "bg-amber-500"
                       : "bg-red-500"
                   }`}
                 />
                 <span className="text-sm font-medium text-slate-800">
-                  {result.successRate}
+                  {(result.successRate * 100).toFixed(0)}%
                 </span>
               </div>
 
@@ -176,11 +176,13 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
                                         </pre>
                                       </>
                                     ) : null}
-                                    {typeof call.error === "string"
-                                      ? call.error
-                                      : call.error && call.output
-                                      ? null
-                                      : "Unknown error"}
+                                    <div>
+                                      {typeof call.error === "string"
+                                        ? call.error
+                                        : call.error && call.output
+                                        ? null
+                                        : "Unknown error"}
+                                    </div>
                                   </div>
                                 )}
                               </div>

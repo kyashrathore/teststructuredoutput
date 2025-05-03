@@ -5,9 +5,8 @@
  * @returns Promise<{ modelName: string, calls: ModelCall[], averageTimeMs: number, successRate: number }[]>
  */
 
-import { generateObject, jsonSchema as aiJsonSchema } from "ai";
+import { generateObject } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import * as z from "https://cdn.jsdelivr.net/npm/zod@3.23.8/lib/index.mjs";
 import { executeUserCodeAndGetSchema } from "./executeUserCodeAndGetSchema";
 
 type StressTestParams = {
@@ -52,31 +51,21 @@ export async function runStressTest(
           const startTime = performance.now();
           let llmResponseTime: number;
           try {
-            const zodScema = await executeUserCodeAndGetSchema(
+            const zodSchema = await executeUserCodeAndGetSchema(
               params.schema,
-              z
+              window.Zod
             );
 
             const { object: aiResponseText } = await generateObject({
               model: openRouterProvider(model),
-              schema: zodScema,
+              schema: zodSchema,
               system: params.systemPrompt || "",
               prompt: params.userPrompt || "",
             });
 
             llmResponseTime = performance.now() - startTime;
 
-            const validationResponse = zodScema.safeParse(aiResponseText);
-            if (!validationResponse.ok) {
-              return {
-                successful: false,
-                timeMs: llmResponseTime,
-                error: "Failed to execute schema in sandbox",
-                output: aiResponseText,
-              };
-            }
-
-            const validationData = await validationResponse.json();
+            const validationData = zodSchema.safeParse(aiResponseText);
             const successful = !!validationData.success;
 
             if (!successful) {

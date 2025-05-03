@@ -11,6 +11,7 @@ interface TestState {
   editingPromptHash: string | null;
   schemaError: string | null;
   saveTestError: string | null;
+  openRouterKey: string | null;
 
   // Actions
   selectTest: (testId: string | null) => void;
@@ -27,6 +28,7 @@ interface TestState {
   ) => void;
   removeTest: (testId: string) => void;
   removeSystemPrompt: (testId: string, promptHash: string) => void;
+  setOpenRouterKey: (key: string) => void;
 }
 
 // Only persist plain state, not computed properties
@@ -40,6 +42,7 @@ export const useTestStore = create<TestState>()(
       editingPromptHash: null,
       schemaError: null,
       saveTestError: null,
+      openRouterKey: null,
 
       selectTest: (testId) => {
         const state = get();
@@ -158,7 +161,7 @@ if (systemPromptTest) {
       const totalTimeMs = existingResult.calls.reduce((sum: number, call: import("../types/stress-test").ModelCall) => sum + call.timeMs, 0);
 
       existingResult.averageTimeMs = totalCalls > 0 ? totalTimeMs / totalCalls : 0;
-      existingResult.successRate = totalCalls > 0 ? (successfulCalls / totalCalls) * 100 : 0;
+      existingResult.successRate = totalCalls > 0 ? (successfulCalls / totalCalls) : 0;
     } else {
       // Add new model result (deep copy calls)
       aggregatedResultsMap.set(newResult.modelName, { ...newResult, calls: [...newResult.calls] });
@@ -228,6 +231,9 @@ if (systemPromptTest) {
           latestResults: null,
           editingPromptHash: null,
         });
+      },
+      setOpenRouterKey: (key) => {
+        set({ openRouterKey: key });
       }
       }),
     {
@@ -240,6 +246,7 @@ if (systemPromptTest) {
           editingPromptHash: state.editingPromptHash,
           schemaError: state.schemaError,
           saveTestError: state.saveTestError,
+          openRouterKey: state.openRouterKey,
         }),
         migrate: (persistedState: any, version) => {
           if (

@@ -5,6 +5,7 @@ import ResultsDisplay from "@/app/components/results/ResultsDisplay";
 import { Brain } from "lucide-react";
 import { useTestStore } from "@/app/store/testStore";
 import Link from "next/link";
+import runStressTest from "./utils/runStressTest";
 
 interface StressTestPageProps {
   testName?: string;
@@ -18,26 +19,16 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
   const saveTestError = useTestStore((state) => state.saveTestError);
 
   const selectedTestId = useTestStore((state) => state.selectedTestId);
-console.log({selectedTestId})
+  console.log({ selectedTestId });
+  const openRouterKey = useTestStore((state) => state.openRouterKey);
+
   const handleRunTest = async (testParams: any) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/test", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(testParams),
-        next: { revalidate: 0 },
-      });
+      const response = await runStressTest(testParams, openRouterKey ?? "");
 
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      const data = await response.json();
       saveTestResults(
         {
           testName: testParams.testName,
@@ -47,7 +38,7 @@ console.log({selectedTestId})
         testParams.systemPrompt,
         testParams.models,
         testParams.callTimes,
-        data.results
+        response
       );
     } catch (err) {
       setError(

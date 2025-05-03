@@ -26,6 +26,8 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/zod@3.23.8/lib/index.umd.js"></script>
+        <script>window.z = window.Zod;</script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

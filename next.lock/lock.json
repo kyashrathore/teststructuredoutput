@@ -1,0 +1,4 @@
+{
+  "https://cdn.jsdelivr.net/npm/zod@3.23.8/lib/index.mjs": { "integrity": "sha512-6Fp/wKcKy/sCvdHiljAjGRoBuXKTjKJbXPNtIPbe5u4h3JE9Qq1lg4Jj/9Jw1nZpSoeRB3RXv28pSQWMalTu8A==", "contentType": "application/javascript; charset=utf-8" },
+  "version": 1
+}

@@ -5,6 +5,7 @@ import { useTestStore } from "./store/testStore";
 import type { FormData } from "./components/StressTestForm";
 import Header from "./components/Header";
 import CreateTestModal from "./components/CreateTestModal";
+import runStressTest from "./utils/runStressTest";
 
 function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,25 +14,13 @@ function HomePage() {
 
   const savedTests = useTestStore((state) => state.savedTests);
   const saveTestResults = useTestStore((state) => state.saveTestResults);
+  const openRouterKey = useTestStore((state) => state.openRouterKey);
 
   // Handler for form submission in modal
   const handleCreateTest = async (data: FormData) => {
     setIsCreating(true);
     try {
-      const response = await fetch("/api/test", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-        next: { revalidate: 0 },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const result = await runStressTest(data, openRouterKey || "");
 
       saveTestResults(
         {
@@ -42,7 +31,7 @@ function HomePage() {
         data.systemPrompt,
         data.models,
         data.callTimes,
-        result.results
+        result
       );
 
       router.push(`/${encodeURIComponent(data.testName.trim())}`);

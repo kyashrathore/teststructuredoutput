@@ -19,6 +19,7 @@ export default async function transpileTypeScriptInBrowser(
     try {
       const result = babelInstance.transform(typescriptCode, {
         presets: ["typescript"],
+        plugins: ["transform-modules-commonjs"],
         filename: "userCode.ts",
       });
   
@@ -31,4 +32,3 @@ export default async function transpileTypeScriptInBrowser(
       throw new Error(`TypeScript Transpilation Failed: ${error.message}`);
     }
   }
-  
