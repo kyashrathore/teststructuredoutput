@@ -133,25 +133,51 @@ export const useTestStore = create<TestState>()(
         const systemPromptHash = generateHash(systemPrompt);
         let systemPromptTest = savedTest.systemPrompts.find(sp => sp.systemPromptHash === systemPromptHash);
 
-        if (systemPromptTest) {
-          // Merge new results into existing results for this schema/system prompt variation
-          systemPromptTest.models = models;
-          systemPromptTest.callTimes = callTimes;
-          systemPromptTest.results = Array.isArray(systemPromptTest.results)
-            ? [...systemPromptTest.results, ...results]
-            : results;
-          systemPromptTest.updatedAt = now;
-          systemPromptTest.runCount += 1;
+if (systemPromptTest) {
+  // Aggregate new results into existing results for this schema/system prompt variation
+  systemPromptTest.models = models;
+  systemPromptTest.callTimes = callTimes;
 
-          // Ensure selection stays on the updated prompt
-          set({
-            savedTests,
-            selectedTestId: savedTest.id,
-            selectedPromptHashes: [systemPromptTest.systemPromptHash],
-            latestResults: systemPromptTest.results,
-            editingPromptHash: systemPromptTest.systemPromptHash,
-          });
-        } else {
+  // Aggregation logic: merge by modelName, aggregate calls, recalculate stats
+  const existingResults = Array.isArray(systemPromptTest.results) ? systemPromptTest.results : [];
+  const aggregatedResultsMap = new Map();
+
+  // Populate map with existing results (deep copy calls)
+  existingResults.forEach(res => {
+    aggregatedResultsMap.set(res.modelName, { ...res, calls: [...res.calls] });
+  });
+
+  // Process new results
+  results.forEach(newResult => {
+    const existingResult = aggregatedResultsMap.get(newResult.modelName);
+    if (existingResult) {
+      // Merge calls
+      existingResult.calls.push(...newResult.calls);
+      const totalCalls = existingResult.calls.length;
+      const successfulCalls = existingResult.calls.filter((call: import("../types/stress-test").ModelCall) => call.successful).length;
+      const totalTimeMs = existingResult.calls.reduce((sum: number, call: import("../types/stress-test").ModelCall) => sum + call.timeMs, 0);
+
+      existingResult.averageTimeMs = totalCalls > 0 ? totalTimeMs / totalCalls : 0;
+      existingResult.successRate = totalCalls > 0 ? (successfulCalls / totalCalls) * 100 : 0;
+    } else {
+      // Add new model result (deep copy calls)
+      aggregatedResultsMap.set(newResult.modelName, { ...newResult, calls: [...newResult.calls] });
+    }
+  });
+
+  systemPromptTest.results = Array.from(aggregatedResultsMap.values());
+  systemPromptTest.updatedAt = now;
+  systemPromptTest.runCount += 1;
+
+  // Ensure selection stays on the updated prompt
+  set({
+    savedTests,
+    selectedTestId: savedTest.id,
+    selectedPromptHashes: [systemPromptTest.systemPromptHash],
+    latestResults: systemPromptTest.results,
+    editingPromptHash: systemPromptTest.systemPromptHash,
+  });
+} else {
           systemPromptTest = {
             id: generateHash(systemPrompt + now),
             systemPrompt,

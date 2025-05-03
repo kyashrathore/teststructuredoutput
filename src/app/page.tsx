@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTestStore } from "./store/testStore";
+import type { FormData } from "./components/StressTestForm";
 import Header from "./components/Header";
 import CreateTestModal from "./components/CreateTestModal";
 
@@ -11,16 +12,51 @@ function HomePage() {
   const router = useRouter();
 
   const savedTests = useTestStore((state) => state.savedTests);
+  const saveTestResults = useTestStore((state) => state.saveTestResults);
 
   // Handler for form submission in modal
-  const handleCreateTest = (data: { testName: string }) => {
+  const handleCreateTest = async (data: FormData) => {
     setIsCreating(true);
-    // After saving, navigate to the new test page and close modal
-    if (data.testName && data.testName.trim()) {
+    try {
+      const response = await fetch("/api/test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+        next: { revalidate: 0 },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      saveTestResults(
+        {
+          testName: data.testName,
+          schema: data.schema,
+          userPrompt: data.userPrompt,
+        },
+        data.systemPrompt,
+        data.models,
+        data.callTimes,
+        result.results
+      );
+
       router.push(`/${encodeURIComponent(data.testName.trim())}`);
       setIsModalOpen(false);
+    } catch (err) {
+      // Optionally, handle error UI here
+      alert(
+        err instanceof Error
+          ? err.message
+          : "An unknown error occurred while creating the test."
+      );
+    } finally {
+      setIsCreating(false);
     }
-    setIsCreating(false);
   };
 
   return (

@@ -8,7 +8,7 @@ import { generateHash } from "../utils/stressTestStorage";
 import { SavedTest, SystemPromptTest } from "../types/stress-test";
 import { useTestStore } from "../store/testStore";
 
-interface FormData {
+export interface FormData {
   testName: string;
   models: string[];
   schema: string;
@@ -21,12 +21,14 @@ interface StressTestFormProps {
   onSubmit: (data: FormData) => void;
   isLoading: boolean;
   testName?: string;
+  isCreateMode?: boolean;
 }
 
 const StressTestForm: React.FC<StressTestFormProps> = ({
   onSubmit,
   isLoading,
   testName,
+  isCreateMode = false,
 }) => {
   const [schemaError, setSchemaError] = useState<string | null>(null);
   const savedTests = useTestStore((state) => state.savedTests);
@@ -60,7 +62,7 @@ const StressTestForm: React.FC<StressTestFormProps> = ({
   } = useForm<FormData>({
     defaultValues: {
       testName: testName || "",
-      models: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet"],
+      models: ["openai/gpt-4.1"],
       schema: `import { z } from "zod";
 
  const personSchema = z.object({
@@ -115,33 +117,7 @@ export default personSchema;
 
       const finalTestName = testName || data.testName;
 
-      saveTestResults(
-        {
-          testName: finalTestName,
-          schema: data.schema,
-          userPrompt: data.userPrompt,
-        },
-        data.systemPrompt,
-        data.models,
-        data.callTimes,
-        []
-      );
-
-      const updatedTest = useTestStore
-        .getState()
-        .savedTests.find(
-          (t) =>
-            t.testName === finalTestName &&
-            t.schema === data.schema &&
-            t.userPrompt === data.userPrompt
-        );
-      if (updatedTest) {
-        selectTest(updatedTest.id);
-        const systemPromptHash = generateHash(data.systemPrompt);
-        setEditingPromptHash(systemPromptHash);
-        selectPromptHashes([systemPromptHash]);
-      }
-
+      // Pass all form data to parent for API call and saving
       onSubmit({ ...data, testName: finalTestName });
     } catch (e: any) {
       setSchemaError(`Invalid JSON Schema: ${e.message}`);
@@ -211,7 +187,6 @@ export default personSchema;
                   errors.testName ? "border-red-500" : ""
                 }`}
                 aria-invalid={errors.testName ? "true" : "false"}
-                disabled={isEditingExistingTest}
               />
               {errors.testName && (
                 <p className="mt-1 text-sm text-red-600" role="alert">
@@ -220,40 +195,8 @@ export default personSchema;
               )}
             </div>
           )}
-
           {}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Load Saved Test
-            </label>
-            <Select
-              isClearable
-              placeholder="Select a saved test..."
-              options={testOptions}
-              value={
-                testOptions.find((opt) => opt.value === selectedTestId) || null
-              }
-              onChange={(opt) => {
-                const id = opt ? opt.value : null;
-                selectTest(id);
-                setEditingPromptHash(null);
-                selectPromptHashes([]);
-              }}
-              className="mb-2 text-slate-800"
-            />
-            {selectedTest && (
-              <button
-                type="button"
-                className="text-xs text-red-600 underline"
-                onClick={() => handleRemoveTest(selectedTest.id)}
-              >
-                Remove this test
-              </button>
-            )}
-          </div>
-
-          {}
-          {selectedTest && (
+          {!isCreateMode && selectedTest && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 System Prompt Variations
@@ -409,6 +352,9 @@ export default personSchema;
                   {schemaError && !error?.message && (
                     <p className="mt-1 text-sm text-red-600">{schemaError}</p>
                   )}
+                  <p className="mt-1 text-xs text-slate-500">
+                    Note: The schema cannot be changed for this test after creation.
+                  </p>
                 </>
               )}
             />
@@ -465,6 +411,9 @@ export default personSchema;
                 {errors.userPrompt.message}
               </p>
             )}
+            <p className="mt-1 text-xs text-slate-500">
+              Note: The user prompt cannot be changed for this test after creation.
+            </p>
           </div>
 
           {}

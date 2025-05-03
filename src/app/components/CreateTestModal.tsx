@@ -8,10 +8,12 @@ import {
 
 import StressTestForm from "./StressTestForm";
 
+import { FormData } from "./StressTestForm";
+
 interface CreateTestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: FormData) => Promise<void> | void;
   isLoading?: boolean;
 }
 
@@ -21,7 +23,6 @@ const CreateTestModal: React.FC<CreateTestModalProps> = ({
   onSubmit,
   isLoading = false,
 }) => {
-  const [submitting, setSubmitting] = useState(false);
 
   return (
     <>
@@ -31,6 +32,7 @@ const CreateTestModal: React.FC<CreateTestModalProps> = ({
             <StressTestForm
               onSubmit={onSubmit}
               isLoading={isLoading}
+              isCreateMode={true}
             />
           </DialogPanel>
         </div>
