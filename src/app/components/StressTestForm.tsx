@@ -167,11 +167,11 @@ export default personSchema;
   return (
     <form
       onSubmit={handleSubmit(handleFormSubmit)}
-      className="bg-white rounded-lg shadow"
+      className="bg-white rounded-lg shadow flex flex-col h-full"
     >
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 flex-grow overflow-y-auto min-h-0">
         <div className="space-y-4">
-          {}
+          {/* All form fields remain unchanged */}
           {!testName && (
             <div>
               <label
@@ -183,7 +183,7 @@ export default personSchema;
               <input
                 id="testName"
                 {...register("testName", { required: "Test name is required" })}
-                className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm text-black ${
+                className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500  px-4 py-2 text-md text-black ${
                   errors.testName ? "border-red-500" : ""
                 }`}
                 aria-invalid={errors.testName ? "true" : "false"}
@@ -195,7 +195,6 @@ export default personSchema;
               )}
             </div>
           )}
-          {}
           {!isCreateMode && selectedTest && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -234,8 +233,6 @@ export default personSchema;
               )}
             </div>
           )}
-
-          {}
           <div>
             <Controller
               name="models"
@@ -323,8 +320,6 @@ export default personSchema;
               )}
             />
           </div>
-
-          {}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Zod Schema Definition
@@ -344,7 +339,7 @@ export default personSchema;
                     value={value}
                     onChange={onChange}
                     error={error?.message || schemaError || undefined}
-                    disabled={isEditingExistingTest}
+                    disabled={!isCreateMode && isEditingExistingTest}
                   />
                   {error?.message && (
                     <p className="mt-1 text-sm text-red-600">{error.message}</p>
@@ -353,14 +348,13 @@ export default personSchema;
                     <p className="mt-1 text-sm text-red-600">{schemaError}</p>
                   )}
                   <p className="mt-1 text-xs text-slate-500">
-                    Note: The schema cannot be changed for this test after creation.
+                    Note: The schema cannot be changed for this test after
+                    creation.
                   </p>
                 </>
               )}
             />
           </div>
-
-          {}
           <div>
             <label
               htmlFor="systemPrompt"
@@ -374,7 +368,7 @@ export default personSchema;
                 required: "System prompt is required",
               })}
               rows={3}
-              className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm text-black ${
+              className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-md text-black ${
                 errors.systemPrompt ? "border-red-500" : ""
               }`}
               aria-invalid={errors.systemPrompt ? "true" : "false"}
@@ -385,8 +379,6 @@ export default personSchema;
               </p>
             )}
           </div>
-
-          {}
           <div>
             <label
               htmlFor="userPrompt"
@@ -400,11 +392,11 @@ export default personSchema;
                 required: "User prompt is required",
               })}
               rows={3}
-              className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm text-black ${
+              className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-md text-black ${
                 errors.userPrompt ? "border-red-500" : ""
               }`}
               aria-invalid={errors.userPrompt ? "true" : "false"}
-              disabled={isEditingExistingTest}
+              disabled={!isCreateMode && isEditingExistingTest}
             />
             {errors.userPrompt && (
               <p className="mt-1 text-sm text-red-600" role="alert">
@@ -412,11 +404,10 @@ export default personSchema;
               </p>
             )}
             <p className="mt-1 text-xs text-slate-500">
-              Note: The user prompt cannot be changed for this test after creation.
+              Note: The user prompt cannot be changed for this test after
+              creation.
             </p>
           </div>
-
-          {}
           <div>
             <label
               htmlFor="callTimes"
@@ -435,7 +426,7 @@ export default personSchema;
                 min: { value: 1, message: "Minimum calls is 1" },
                 max: { value: 20, message: "Maximum calls is 20" },
               })}
-              className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm text-black ${
+              className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-md text-black ${
                 errors.callTimes ? "border-red-500" : ""
               }`}
               aria-invalid={errors.callTimes ? "true" : "false"}
@@ -448,8 +439,7 @@ export default personSchema;
           </div>
         </div>
       </div>
-
-      <div className="flex justify-end px-4 pb-4">
+      <div className="flex justify-end px-4 pb-4 flex-shrink-0">
         <button
           type="submit"
           disabled={isLoading || !!schemaError}

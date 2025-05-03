@@ -68,37 +68,45 @@ function HomePage() {
         onSubmit={handleCreateTest}
         isLoading={isCreating}
       />
-      <div className="max-w-lg w-full bg-white rounded-lg shadow p-8 mt-10">
-        <h1 className="text-3xl font-bold text-slate-800 mb-4">AI Model Stress Test</h1>
-        <p className="text-slate-600 mb-8">
-          Create and compare structured output performance for multiple AI models.
-        </p>
-        <div className="mt-10">
-          <h2 className="text-xl font-semibold text-slate-800 mb-4">Saved Tests</h2>
-          {savedTests.length === 0 ? (
-            <p className="text-slate-500">No saved tests found.</p>
-          ) : (
-            <ul className="divide-y divide-slate-200 h-100 overflow-auto">
-              {savedTests.map((test) => (
-                <li key={test.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-slate-700">{test.testName}</div>
-                    <div className="text-xs text-slate-400">
-                      Created: {new Date(test.createdAt).toLocaleString()}
-                    </div>
-                  </div>
+      {savedTests.length === 0 ? (
+        <p className="text-slate-500">No saved tests found.</p>
+      ) : (
+        <table className="min-w-full divide-y divide-slate-200 overflow-auto">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Test Name
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Created
+              </th>
+              <th className="px-4 py-2"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {savedTests.map((test) => (
+              <tr key={test.id}>
+                <td className="px-4 py-1 h-10 align-middle font-medium text-slate-700">
+                  {test.testName}
+                </td>
+                <td className="px-4 py-1 h-10 align-middle text-xs text-slate-400">
+                  {new Date(test.createdAt).toLocaleString()}
+                </td>
+                <td className="px-4 py-1 h-10 align-middle">
                   <button
-                    className="ml-4 px-3 py-1.5 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 text-sm font-medium"
-                    onClick={() => router.push(`/${encodeURIComponent(test.testName)}`)}
+                    className="px-3 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 text-sm font-medium"
+                    onClick={() =>
+                      router.push(`/${encodeURIComponent(test.testName)}`)
+                    }
                   >
                     View
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

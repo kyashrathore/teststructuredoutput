@@ -65,15 +65,15 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
               <div className="flex items-center">
                 <span
                   className={`h-2 w-2 rounded-full mr-1.5 ${
-                    result.successRate >= 0.9
+                    result.successRate >= 0.9 * 100
                       ? "bg-emerald-500"
-                      : result.successRate >= 0.7
+                      : result.successRate >= 0.7 * 100
                       ? "bg-amber-500"
                       : "bg-red-500"
                   }`}
                 />
-                <span className="text-sm font-medium test-slate-900">
-                  {(result.successRate * 100).toFixed(0)}%
+                <span className="text-sm font-medium text-slate-800">
+                  {result.successRate}
                 </span>
               </div>
 
@@ -164,15 +164,24 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
                                     </pre>
                                   </>
                                 ) : (
-                                  <>
-                                    <h4 className="font-medium text-red-600 mb-2">
-                                      Error:
-                                    </h4>
+                                  <div>
                                     <pre className="bg-red-50 p-3 rounded-md overflow-x-auto text-xs text-red-700">
                                       {JSON.stringify(call.output, null, 2)}
                                     </pre>
-                                    {call.error || "Unknown error"}
-                                  </>
+                                    {call.output && call.error ? (
+                                      <>
+                                        <h3 className="text-red-600">Error:</h3>
+                                        <pre className="bg-red-50 p-3 rounded-md overflow-x-auto text-xs text-red-700">
+                                          {JSON.stringify(call.error, null, 2)}
+                                        </pre>
+                                      </>
+                                    ) : null}
+                                    {typeof call.error === "string"
+                                      ? call.error
+                                      : call.error && call.output
+                                      ? null
+                                      : "Unknown error"}
+                                  </div>
                                 )}
                               </div>
                             </td>
