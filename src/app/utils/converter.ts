@@ -1,13 +1,12 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import yaml from "js-yaml";
-import { SourceFormat, TargetFormat } from "../types/formats";
-import { executeUserCodeAndGetSchema } from "./executeUserCodeAndGetSchema.ts";
+import { executeUserCodeAndGetSchema } from "./executeUserCodeAndGetSchema";
 
 
 export async function convert(
   input: string,
-  sourceFormat: SourceFormat,
-  targetFormat: TargetFormat
+  sourceFormat: any,
+  targetFormat: any
 ): Promise<string> {
   if (sourceFormat === "json" && targetFormat === "json") {
     try {
@@ -19,7 +18,7 @@ export async function convert(
   }
 
   let jsonSchema: object;
-  let extractedSchema: object;
+  let extractedSchema: string;
 
   if (sourceFormat === "zod") {
     try {

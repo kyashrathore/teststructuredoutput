@@ -167,9 +167,9 @@ export default personSchema;
   return (
     <form
       onSubmit={handleSubmit(handleFormSubmit)}
-      className="bg-white rounded-lg shadow flex flex-col h-full"
+      className="bg-white rounded-lg shadow flex flex-col"
     >
-      <div className="p-6 space-y-6 flex-grow overflow-y-auto min-h-0">
+      <div className="p-6 space-y-6 flex-grow overflow-y-auto h-[calc(90dvh)]">
         <div className="space-y-4">
           {/* All form fields remain unchanged */}
           {!testName && (
@@ -340,6 +340,7 @@ export default personSchema;
                     onChange={onChange}
                     error={error?.message || schemaError || undefined}
                     disabled={!isCreateMode && isEditingExistingTest}
+                    height={!isCreateMode ? "80px" : "200px"}
                   />
                   {error?.message && (
                     <p className="mt-1 text-sm text-red-600">{error.message}</p>
@@ -391,7 +392,7 @@ export default personSchema;
               {...register("userPrompt", {
                 required: "User prompt is required",
               })}
-              rows={3}
+              rows={!isCreateMode ? 1 : 3}
               className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-md text-black ${
                 errors.userPrompt ? "border-red-500" : ""
               }`}

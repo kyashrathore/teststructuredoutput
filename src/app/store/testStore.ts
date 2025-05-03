@@ -29,6 +29,15 @@ interface TestState {
   removeTest: (testId: string) => void;
   removeSystemPrompt: (testId: string, promptHash: string) => void;
   setOpenRouterKey: (key: string) => void;
+
+  addCallResult: (
+    testName: string,
+    schema: string,
+    userPrompt: string,
+    systemPrompt: string,
+    modelName: string,
+    callResult: import("../types/stress-test").ModelCall
+  ) => void;
 }
 
 // Only persist plain state, not computed properties
@@ -234,6 +243,99 @@ if (systemPromptTest) {
       },
       setOpenRouterKey: (key) => {
         set({ openRouterKey: key });
+      },
+
+      /**
+       * Incrementally add a single call result for a model/systemPrompt.
+       * Recalculates stats for the model after each call.
+       */
+      addCallResult: (
+        testName: string,
+        schema: string,
+        userPrompt: string,
+        systemPrompt: string,
+        modelName: string,
+        callResult: import("../types/stress-test").ModelCall
+      ) => {
+        let savedTests = get().savedTests.slice();
+        const now = new Date().toISOString();
+
+        // Find base test by testName, schema, userPrompt
+        let savedTest = savedTests.find(
+          t =>
+            t.testName === testName &&
+            t.schema === schema &&
+            t.userPrompt === userPrompt
+        );
+
+        if (!savedTest) {
+          // If not found, create it
+          savedTest = {
+            id: generateHash(testName + now),
+            testName,
+            createdAt: now,
+            schema,
+            userPrompt,
+            systemPrompts: []
+          };
+          savedTests.push(savedTest);
+        }
+
+        const systemPromptHash = generateHash(systemPrompt);
+        let systemPromptTest = savedTest.systemPrompts.find(
+          sp => sp.systemPromptHash === systemPromptHash
+        );
+
+        if (!systemPromptTest) {
+          // If not found, create it
+          systemPromptTest = {
+            id: generateHash(systemPrompt + now),
+            systemPrompt,
+            systemPromptHash,
+            models: [modelName],
+            callTimes: 1,
+            results: [],
+            createdAt: now,
+            updatedAt: now,
+            runCount: 1
+          };
+          savedTest.systemPrompts.push(systemPromptTest);
+        }
+
+        // Find or create the model result
+        let modelResult = systemPromptTest.results.find(
+          r => r.modelName === modelName
+        );
+        if (!modelResult) {
+          modelResult = {
+            modelName,
+            calls: [],
+            averageTimeMs: 0,
+            successRate: 0
+          };
+          systemPromptTest.results.push(modelResult);
+        }
+
+        // Add the call result
+        modelResult.calls.push(callResult);
+
+        // Recalculate stats
+        const totalCalls = modelResult.calls.length;
+        const successfulCalls = modelResult.calls.filter(c => c.successful).length;
+        const totalTimeMs = modelResult.calls.reduce((sum, c) => sum + c.timeMs, 0);
+
+        modelResult.averageTimeMs = totalCalls > 0 ? totalTimeMs / totalCalls : 0;
+        modelResult.successRate = totalCalls > 0 ? successfulCalls / totalCalls : 0;
+
+        systemPromptTest.updatedAt = now;
+
+        set({
+          savedTests,
+          selectedTestId: savedTest.id,
+          selectedPromptHashes: [systemPromptTest.systemPromptHash],
+          latestResults: systemPromptTest.results,
+          editingPromptHash: systemPromptTest.systemPromptHash,
+        });
       }
       }),
     {

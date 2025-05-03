@@ -27,8 +27,7 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
     setError(null);
 
     try {
-      const response = await runStressTest(testParams, openRouterKey ?? "");
-
+      // Initialize the test in the store (empty results)
       saveTestResults(
         {
           testName: testParams.testName,
@@ -38,7 +37,26 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
         testParams.systemPrompt,
         testParams.models,
         testParams.callTimes,
-        response
+        []
+      );
+
+      // Incrementally add results as they arrive
+      await runStressTest(
+        testParams,
+        openRouterKey ?? "",
+        (modelName, callResult) => {
+          // Add each call result to the store
+          useTestStore
+            .getState()
+            .addCallResult(
+              testParams.testName,
+              testParams.schema,
+              testParams.userPrompt,
+              testParams.systemPrompt,
+              modelName,
+              callResult
+            );
+        }
       );
     } catch (err) {
       setError(
@@ -52,20 +70,15 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <header className="mb-10">
+      <header className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <Link href="/">
-            <Brain className="h-8 w-8 text-blue-500" />
+            <Brain className=" text-blue-500" />
           </Link>
-          <h1 className="text-3xl font-bold text-slate-800">
-            AI Model Stress Test
+          <h1 className="text-xl font-bold text-slate-800">
+          Structured output test
           </h1>
         </div>
-        <p className="text-slate-600 max-w-3xl">
-          Test multiple AI models with parallel calls and compare their
-          performance in generating structured outputs that match your specified
-          Zod schema.
-        </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -95,19 +108,6 @@ const StressTestPage: React.FC<StressTestPageProps> = ({ testName }) => {
           {/* Always render ResultsDisplay. It will use global state for results */}
           <ResultsDisplay />
 
-          {isLoading && (
-            <div className="h-96 flex items-center justify-center bg-white border border-slate-200 rounded-lg">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <h3 className="text-xl font-medium text-slate-700">
-                  Running tests...
-                </h3>
-                <p className="text-slate-500 mt-2">
-                  This may take a few moments.
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

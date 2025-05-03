@@ -31,7 +31,7 @@ const CreateTestModal: React.FC<CreateTestModalProps> = ({
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/30 transition-opacity" aria-hidden="true" />
       {/* Modal Panel */}
-      <div className="fixed inset-0 flex w-screen items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 flex w-screen items-start justify-center p-4 z-50">
         <DialogPanel className="max-w-3xl w-full border bg-gray-100 h-[85vh] flex flex-col shadow-xl relative">
           {/* Close Button */}
           <button

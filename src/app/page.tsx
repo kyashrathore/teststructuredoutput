@@ -20,8 +20,7 @@ function HomePage() {
   const handleCreateTest = async (data: FormData) => {
     setIsCreating(true);
     try {
-      const result = await runStressTest(data, openRouterKey || "");
-
+      // Initialize the test in the store (empty results)
       saveTestResults(
         {
           testName: data.testName,
@@ -31,7 +30,25 @@ function HomePage() {
         data.systemPrompt,
         data.models,
         data.callTimes,
-        result
+        []
+      );
+
+      // Incrementally add results as they arrive
+      await runStressTest(
+        data,
+        openRouterKey || "",
+        (modelName, callResult) => {
+          useTestStore
+            .getState()
+            .addCallResult(
+              data.testName,
+              data.schema,
+              data.userPrompt,
+              data.systemPrompt,
+              modelName,
+              callResult
+            );
+        }
       );
 
       router.push(`/${encodeURIComponent(data.testName.trim())}`);
